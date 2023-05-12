@@ -137,8 +137,9 @@ subsampled_data <- bind_rows(
 # Get the top 10 well-sampled species
 top_species <- subsampled_data %>%
   count(species) %>%
-  top_n(10) %>%
+  top_n(10, wt = n) %>% # Rank by count (n)
   pull(species)
+
 
 # Filter the data to only include the top 10 well-sampled species
 subsampled_data_top_species <- subsampled_data %>%
@@ -152,4 +153,3 @@ species_grid_presence <- subsampled_data_top_species %>%
 
 # Print the results
 species_grid_presence
-
