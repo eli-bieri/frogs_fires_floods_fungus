@@ -87,19 +87,29 @@ postfire_data_grid <- st_join(postfire_data_sf, aus_grids, left = FALSE)
 prefire_data_grid_proj <- st_transform(prefire_data_grid, 32754)
 postfire_data_grid_proj <- st_transform(postfire_data_grid, 32754)
 
-# Clean the aus_grids geometries using st_buffer()
-aus_grids_clean <- aus_grids %>% st_buffer(dist = 0)
 
-# Identify burnt and unburnt grid cells
-burnt_cells <- st_intersection(aus_grids, aus_grids_clean)
-unburnt_cells <- st_difference(aus_grids, aus_grids_clean)
+# Read in the fire layer
+fire <- st_read("FESM_area_84.shp")
+
+# Assign CRS to the fire layer
+if (is.na(st_crs(fire))) {
+  st_crs(fire) <- 4326
+}
+
+# Transform fire to the same CRS as aus_grids
+fire_transformed <- st_transform(fire, st_crs(aus_grids))
+
+# Classify the grid cells as burnt or unburnt
+burnt_cells <- st_intersection(aus_grids, fire_transformed)
+unburnt_cells <- st_difference(aus_grids, fire_transformed)
 
 # Filter frog occurrences to only include those within burnt and unburnt grid cells
-prefire_burnt <- prefire_data_grid_proj[st_intersects(prefire_data_grid_proj, burnt_cells), ]
-prefire_unburnt <- prefire_data_grid_proj[st_intersects(prefire_data_grid_proj, unburnt_cells), ]
+prefire_burnt <- prefire_data_grid[which(lengths(st_intersects(prefire_data_grid, burnt_cells)) > 0), ]
+prefire_unburnt <- prefire_data_grid[which(lengths(st_intersects(prefire_data_grid, unburnt_cells)) > 0), ]
 
-postfire_burnt <- postfire_data_grid_proj[st_intersects(postfire_data_grid_proj, burnt_cells), ]
-postfire_unburnt <- postfire_data_grid_proj[st_intersects(postfire_data_grid_proj, unburnt_cells), ]
+postfire_burnt <- postfire_data_grid[which(lengths(st_intersects(postfire_data_grid, burnt_cells)) > 0), ]
+postfire_unburnt <- postfire_data_grid[which(lengths(st_intersects(postfire_data_grid, unburnt_cells)) > 0), ]
+
 
 # Transform the filtered data back to WGS 84 (EPSG:4326)
 prefire_burnt <- st_transform(prefire_burnt, 4326)
